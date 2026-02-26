@@ -4,6 +4,20 @@ import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
 import { services } from '@/lib/data';
 import { BookingForm } from '@/components/booking-form';
+import { ShieldCheck, Car, Bike, Cog, Wrench, CarFront, Settings, Construction, Disc } from 'lucide-react';
+import * as React from 'react';
+
+const iconMap: { [key: string]: React.ElementType } = {
+  ShieldCheck,
+  Car,
+  Bike,
+  Cog,
+  Wrench,
+  CarFront,
+  Settings,
+  Construction,
+  Disc
+};
 
 export default function Home() {
   const brands = ['Hero', 'Honda', 'Bajaj', 'TVS', 'Suzuki', 'Yamaha', 'Royal Enfield', 'MRF', 'CEAT'];
@@ -38,13 +52,17 @@ export default function Home() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {services.map((service, index) => {
+                const Icon = iconMap[service.icon];
                 return (
                   <Card
                     key={service.id}
-                    className="bg-card/30 backdrop-blur-lg border border-border/10 shadow-lg hover:shadow-primary/20 hover:-translate-y-2 transition-all duration-300 animate-fade-in-up"
+                    className="bg-card/30 backdrop-blur-lg border border-border/10 shadow-lg hover:shadow-primary/20 hover:-translate-y-2 transition-all duration-300 animate-fade-in-up text-center"
                     style={{ animationDelay: `${0.1 * (index + 1)}s` }}
                   >
                     <CardHeader>
+                      <div className="mx-auto bg-primary/10 p-4 rounded-full mb-4 w-fit">
+                        {Icon && <Icon className="w-10 h-10 text-primary" />}
+                      </div>
                       <CardTitle className="text-xl font-bold">{service.title}</CardTitle>
                     </CardHeader>
                     <CardContent>
