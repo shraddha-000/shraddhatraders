@@ -1,5 +1,4 @@
-import type { Service, Booking } from './types';
-import { add } from 'date-fns';
+import type { Service } from './types';
 
 export const services: Service[] = [
   {
@@ -55,62 +54,5 @@ export const services: Service[] = [
     title: 'Wheel Alignment',
     description: 'Precision wheel alignment for better handling and tire life.',
     icon: 'Disc',
-  },
-];
-
-export const bookings: Booking[] = [
-  {
-    id: 'BK001',
-    name: 'John Doe',
-    phone: '123-456-7890',
-    vehicleType: 'Car',
-    serviceType: 'Car Maintenance',
-    bookingDate: add(new Date(), { days: 2, hours: 3 }),
-    status: 'Confirmed',
-  },
-  {
-    id: 'BK002',
-    name: 'Jane Smith',
-    phone: '098-765-4321',
-    vehicleType: 'SUV',
-    serviceType: 'Wheel Alignment',
-    bookingDate: add(new Date(), { days: -1, hours: 1 }),
-    status: 'Completed',
-  },
-  {
-    id: 'BK003',
-    name: 'Sam Wilson',
-    phone: '555-555-5555',
-    vehicleType: 'Truck',
-    serviceType: 'Engine Work',
-    bookingDate: add(new Date(), { days: 4 }),
-    status: 'Pending',
-  },
-  {
-    id: 'BK004',
-    name: 'Alice Johnson',
-    phone: '111-222-3333',
-    vehicleType: 'Motorcycle',
-    serviceType: 'Bike Wash',
-    bookingDate: add(new Date(), { days: -5 }),
-    status: 'Completed',
-  },
-  {
-    id: 'BK005',
-    name: 'Bob Brown',
-    phone: '444-333-2222',
-    vehicleType: 'Car',
-    serviceType: 'PPF (Paint Protection Film)',
-    bookingDate: add(new Date(), { days: 10 }),
-    status: 'Pending',
-  },
-    {
-    id: 'BK006',
-    name: 'Chris Green',
-    phone: '777-888-9999',
-    vehicleType: 'SUV',
-    serviceType: 'Car Wash',
-    bookingDate: add(new Date(), { days: -10 }),
-    status: 'Cancelled',
   },
 ];

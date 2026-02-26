@@ -5,8 +5,11 @@ service cloud.firestore {
     match /bookings/{bookingId} {
       // Anyone can create a booking through the form
       allow create: if true;
-      // Only authenticated admins can view, update, or delete bookings
-      allow read, update, delete: if request.auth != null;
+      // Anyone can read bookings to check their status.
+      // The client queries by phone number to only show relevant bookings.
+      allow read: if true;
+      // Only authenticated admins can update, or delete bookings
+      allow update, delete: if request.auth != null;
     }
   }
 }
