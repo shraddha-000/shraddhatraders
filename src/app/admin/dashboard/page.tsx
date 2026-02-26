@@ -1,6 +1,8 @@
 'use client';
 
 import * as React from 'react';
+import { useRouter } from 'next/navigation';
+import { useUser } from '@/firebase';
 import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -77,9 +79,17 @@ function BookingActions({ booking }: { booking: Booking }) {
 }
 
 export default function AdminDashboardPage() {
+  const { user, loading } = useUser();
+  const router = useRouter();
   const [bookings, setBookings] = React.useState<Booking[]>(allBookings);
   const [statusFilter, setStatusFilter] = React.useState<string>('all');
   const [searchFilter, setSearchFilter] = React.useState<string>('');
+
+  React.useEffect(() => {
+    if (!loading && !user) {
+      router.push('/admin/login');
+    }
+  }, [user, loading, router]);
 
   React.useEffect(() => {
     let filtered = allBookings;
@@ -91,6 +101,14 @@ export default function AdminDashboardPage() {
     }
     setBookings(filtered);
   }, [statusFilter, searchFilter]);
+
+  if (loading || !user) {
+    return (
+      <div className="flex min-h-dvh items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-dvh">

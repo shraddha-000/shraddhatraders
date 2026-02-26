@@ -1,10 +1,38 @@
+'use client';
+
 import Link from 'next/link';
-import { Wrench } from 'lucide-react';
+import { Wrench, Menu, LogOut, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Menu } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
+import { useAuth, useUser } from '@/firebase';
+import { signOut } from 'firebase/auth';
+import { useToast } from '@/hooks/use-toast';
+import * as React from 'react';
 
 export function SiteHeader() {
+  const pathname = usePathname();
+  const router = useRouter();
+  const { user, loading } = useUser();
+  const auth = useAuth();
+  const { toast } = useToast();
+  const [isLoggingOut, setIsLoggingOut] = React.useState(false);
+
+  const isAdminRoute = pathname.startsWith('/admin');
+  
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await signOut(auth);
+      toast({ title: 'Logged out successfully.' });
+      router.push('/admin/login');
+    } catch (error) {
+      toast({ title: 'Error logging out.', variant: 'destructive' });
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-14 max-w-screen-2xl items-center">
@@ -58,9 +86,16 @@ export function SiteHeader() {
             {/* Can add a search bar here later */}
           </div>
           <nav className="hidden md:flex items-center">
-            <Button asChild>
-              <Link href="/admin/login">Admin Login</Link>
-            </Button>
+            {isAdminRoute && !loading && user ? (
+              <Button variant="outline" onClick={handleLogout} disabled={isLoggingOut}>
+                {isLoggingOut ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LogOut className="mr-2 h-4 w-4" />}
+                Logout
+              </Button>
+            ) : (
+              <Button asChild>
+                <Link href="/admin/login">Admin Login</Link>
+              </Button>
+            )}
           </nav>
         </div>
 
