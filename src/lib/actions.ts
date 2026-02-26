@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache';
 
 const bookingSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters.'),
-  phone: z.string().min(10, 'Please enter a valid phone number.'),
+  phone: z.string().length(10, 'Phone number must be 10 digits.'),
   vehicleType: z.enum(['Car', 'SUV', 'Truck', 'Motorcycle']),
   serviceType: z.string().min(1, 'Please select a service.'),
   bookingDate: z.string().min(1, 'Please select a date.'),

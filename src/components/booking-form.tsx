@@ -23,8 +23,8 @@ const bookingFormSchema = z.object({
   name: z.string().min(2, {
     message: 'Name must be at least 2 characters.',
   }),
-  phone: z.string().min(10, {
-    message: 'Please enter a valid phone number.',
+  phone: z.string().length(10, {
+    message: 'Phone number must be 10 digits.',
   }),
   vehicleType: z.enum(['Car', 'SUV', 'Truck', 'Motorcycle'], {
     required_error: 'Please select a vehicle type.',
@@ -113,7 +113,7 @@ export function BookingForm({ services }: { services: Service[] }) {
               <FormItem>
                 <FormLabel>Phone Number</FormLabel>
                 <FormControl>
-                  <Input placeholder="(123) 456-7890" {...field} />
+                  <Input placeholder="1234567890" maxLength={10} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
