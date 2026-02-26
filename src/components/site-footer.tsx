@@ -12,10 +12,10 @@ export function SiteFooter() {
             </p>
           </div>
           <div className="flex flex-col md:flex-row items-center gap-4 md:gap-6 text-sm text-muted-foreground">
-             <div className="flex items-center gap-2">
+             <a href="https://www.google.com/maps/place/16%C2%B043'28.6%22N+74%C2%B021'32.8%22E" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-primary">
                 <MapPin className="h-4 w-4" />
                 <span>Shahu Tarun Mandal, Rukdi.</span>
-            </div>
+            </a>
              <div className="flex items-center gap-2">
                 <Phone className="h-4 w-4" />
                 <a href="tel:7040333288" className="hover:text-primary">7040333288</a>
