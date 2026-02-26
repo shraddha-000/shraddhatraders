@@ -6,25 +6,21 @@ export const services: Service[] = [
     id: 'car-wash',
     title: 'Premium Car Wash',
     description: 'A thorough exterior wash and dry, leaving your car spotless and gleaming.',
-    imageId: 'car-wash',
   },
   {
     id: 'detailing',
     title: 'Interior Detailing',
     description: 'Deep cleaning of the interior, including vacuuming, upholstery cleaning, and dashboard polishing.',
-    imageId: 'detailing',
   },
   {
     id: 'ceramic-coating',
     title: 'Ceramic Coating',
     description: 'Application of a long-lasting ceramic coat for ultimate paint protection and a mirror-like shine.',
-    imageId: 'ceramic-coating',
   },
   {
     id: 'paint-protection',
     title: 'Paint Protection Film',
     description: "Protect your vehicle's paint from scratches, chips, and stains with our high-quality film.",
-    imageId: 'paint-protection',
   },
 ];
 

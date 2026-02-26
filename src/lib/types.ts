@@ -2,7 +2,6 @@ export type Service = {
   id: string;
   title: string;
   description: string;
-  imageId: string;
 };
 
 export type VehicleType = 'Car' | 'SUV' | 'Truck' | 'Motorcycle';

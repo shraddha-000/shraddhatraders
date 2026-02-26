@@ -1,32 +1,17 @@
-import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
 import { services } from '@/lib/data';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { BookingForm } from '@/components/booking-form';
-import { cn } from '@/lib/utils';
 
 export default function Home() {
-  const heroImage = PlaceHolderImages.find((img) => img.id === 'hero-background');
-
   return (
     <div className="flex flex-col min-h-dvh">
       <SiteHeader />
       <main className="flex-1">
         <section className="relative h-[60vh] md:h-[80vh] w-full flex items-center justify-center text-center text-white">
-          {heroImage && (
-            <Image
-              src={heroImage.imageUrl}
-              alt={heroImage.description}
-              fill
-              className="object-cover"
-              priority
-              data-ai-hint={heroImage.imageHint}
-            />
-          )}
-          <div className="absolute inset-0 bg-black/60" />
+          <div className="absolute inset-0 bg-gradient-to-br from-background to-primary/30" />
           <div className="relative z-10 p-4 max-w-4xl animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-headline font-extrabold tracking-tighter !leading-[1.1]">
               <span className="text-primary">Premium Care</span> for Your Premium Ride
@@ -52,7 +37,6 @@ export default function Home() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
               {services.map((service, index) => {
-                const serviceImage = PlaceHolderImages.find((img) => img.id === service.imageId);
                 return (
                   <Card
                     key={service.id}
@@ -60,18 +44,6 @@ export default function Home() {
                     style={{ animationDelay: `${0.2 * (index + 1)}s` }}
                   >
                     <CardHeader>
-                      {serviceImage && (
-                        <div className="aspect-video relative mb-4">
-                          <Image
-                            src={serviceImage.imageUrl}
-                            alt={service.title}
-                            fill
-                            className="rounded-t-lg object-cover"
-                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                            data-ai-hint={serviceImage.imageHint}
-                          />
-                        </div>
-                      )}
                       <CardTitle className="text-xl font-bold">{service.title}</CardTitle>
                     </CardHeader>
                     <CardContent>
