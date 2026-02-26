@@ -86,7 +86,7 @@ export default function Home() {
             <div className="flex flex-wrap items-center justify-center gap-8 md:gap-12">
               {brands.map((brand) => (
                 <div key={brand} className="text-center">
-                  <p className="text-xl font-bold text-muted-foreground grayscale hover:grayscale-0 transition-all duration-300">
+                  <p className="text-xl font-bold uppercase text-muted-foreground grayscale hover:grayscale-0 transition-all duration-300">
                     {brand}
                   </p>
                 </div>
