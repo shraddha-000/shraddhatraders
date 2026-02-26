@@ -1,9 +1,56 @@
 {
-  "entities": {},
+  "entities": {
+    "Booking": {
+      "title": "Booking",
+      "description": "Represents a service booking made by a customer.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Customer's full name."
+        },
+        "phone": {
+          "type": "string",
+          "description": "Customer's 10-digit phone number."
+        },
+        "vehicleType": {
+          "type": "string",
+          "enum": ["Car", "SUV", "Truck", "Motorcycle"]
+        },
+        "serviceType": {
+          "type": "string",
+          "description": "The type of service requested."
+        },
+        "bookingDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The requested date and time for the booking."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["Pending", "Confirmed", "Completed", "Cancelled"],
+          "description": "The current status of the booking."
+        },
+        "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp when the booking was created."
+        }
+      },
+      "required": ["name", "phone", "vehicleType", "serviceType", "bookingDate", "status"]
+    }
+  },
   "auth": {
     "providers": [
       "password"
     ]
   },
-  "firestore": {}
+  "firestore": {
+    "/bookings/{bookingId}": {
+      "schema": {
+        "$ref": "#/entities/Booking"
+      },
+      "description": "Collection of all service bookings."
+    }
+  }
 }

@@ -1,65 +1,45 @@
-'use server';
+'use client';
 
-import { z } from 'zod';
-import { revalidatePath } from 'next/cache';
+import { addDoc, collection, doc, updateDoc, deleteDoc, serverTimestamp, type Firestore } from "firebase/firestore";
+import type { Booking, BookingStatus } from "./types";
 
-const bookingSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters.'),
-  phone: z.string().length(10, 'Phone number must be 10 digits.'),
-  vehicleType: z.enum(['Car', 'SUV', 'Truck', 'Motorcycle']),
-  serviceType: z.string().min(1, 'Please select a service.'),
-  bookingDate: z.string().min(1, 'Please select a date.'),
-});
+// Note: These are no longer server actions. They are client-side functions
+// that need a Firestore instance.
 
-export type FormState = {
-  message: string;
-  success: boolean;
-};
+type BookingInput = Omit<Booking, 'id' | 'status' | 'createdAt'>;
 
-export async function submitBooking(prevState: FormState, formData: FormData): Promise<FormState> {
-  
-  const validatedFields = bookingSchema.safeParse({
-    name: formData.get('name'),
-    phone: formData.get('phone'),
-    vehicleType: formData.get('vehicleType'),
-    serviceType: formData.get('serviceType'),
-    bookingDate: formData.get('bookingDate'),
-  });
-
-  if (!validatedFields.success) {
-    const errorMessages = validatedFields.error.errors.map((e) => e.message).join(' ');
-    return {
-      message: `Validation failed: ${errorMessages}`,
-      success: false,
+export async function createBooking(db: Firestore, booking: BookingInput) {
+  try {
+    const newBooking = {
+      ...booking,
+      status: 'Pending',
+      createdAt: serverTimestamp(),
     };
+    await addDoc(collection(db, 'bookings'), newBooking);
+    return { success: true, message: 'Booking submitted successfully! We will contact you shortly to confirm.' };
+  } catch (error) {
+    console.error("Error creating booking: ", error);
+    return { success: false, message: 'Failed to submit booking. Please try again.' };
   }
-
-  // Simulate network delay
-  await new Promise((resolve) => setTimeout(resolve, 1000));
-
-  // In a real app, you would save this to a database.
-  console.log('New Booking Submitted:', validatedFields.data);
-
-  revalidatePath('/');
-
-  return {
-    message: 'Booking submitted successfully! We will contact you shortly to confirm.',
-    success: true,
-  };
 }
 
-export async function updateBookingStatus(bookingId: string, status: string) {
-    // Simulate DB update
-    console.log(`Updating booking ${bookingId} to status ${status}`);
-    await new Promise(res => setTimeout(res, 500));
-    revalidatePath('/admin/dashboard');
-    return { success: true, message: `Booking ${bookingId} updated.` };
+export async function updateBookingStatus(db: Firestore, bookingId: string, status: BookingStatus) {
+    try {
+      const bookingRef = doc(db, 'bookings', bookingId);
+      await updateDoc(bookingRef, { status });
+      return { success: true, message: `Booking ${bookingId} updated.` };
+    } catch (error) {
+      console.error("Error updating booking status: ", error);
+      return { success: false, message: 'Failed to update booking status.' };
+    }
 }
 
-export async function deleteBooking(bookingId: string) {
-    // Simulate DB deletion
-    console.log(`Deleting booking ${bookingId}`);
-    await new Promise(res => setTimeout(res, 500));
-    revalidatePath('/admin/dashboard');
-    return { success: true, message: `Booking ${bookingId} deleted.` };
+export async function deleteBooking(db: Firestore, bookingId: string) {
+    try {
+      await deleteDoc(doc(db, 'bookings', bookingId));
+      return { success: true, message: `Booking ${bookingId} deleted.` };
+    } catch (error) {
+      console.error("Error deleting booking: ", error);
+      return { success: false, message: 'Failed to delete booking.' };
+    }
 }

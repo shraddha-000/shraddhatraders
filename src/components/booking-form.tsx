@@ -3,8 +3,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { useFormStatus } from 'react-dom';
-import { useActionState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { CalendarIcon, CheckCircle, Loader2, XCircle } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -16,8 +15,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { submitBooking } from '@/lib/actions';
+import { createBooking } from '@/lib/actions';
 import type { Service } from '@/lib/types';
+import { useFirestore } from '@/firebase';
 
 const bookingFormSchema = z.object({
   name: z.string().min(2, {
@@ -39,24 +39,10 @@ const bookingFormSchema = z.object({
 
 type BookingFormValues = z.infer<typeof bookingFormSchema>;
 
-const initialState = {
-  message: '',
-  success: false,
-};
-
-function SubmitButton() {
-  const { pending } = useFormStatus();
-  return (
-    <Button type="submit" className="w-full" disabled={pending}>
-      {pending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-      Book Now
-    </Button>
-  );
-}
-
 export function BookingForm({ services }: { services: Service[] }) {
   const { toast } = useToast();
-  const [state, formAction] = useActionState(submitBooking, initialState);
+  const db = useFirestore();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<BookingFormValues>({
     resolver: zodResolver(bookingFormSchema),
@@ -66,38 +52,26 @@ export function BookingForm({ services }: { services: Service[] }) {
     },
   });
 
-  useEffect(() => {
-    if (state.message) {
-      toast({
-        title: state.success ? 'Success!' : 'Oops!',
-        description: state.message,
-        variant: state.success ? 'default' : 'destructive',
-        icon: state.success ? <CheckCircle className="text-green-500" /> : <XCircle className="text-red-500" />,
-      });
-      if (state.success) {
-        form.reset();
-      }
-    }
-  }, [state, toast, form]);
-  
-  const formDataAction = (payload: FormData) => {
-    const { vehicleType, serviceType, bookingDate } = form.getValues();
-    if (vehicleType) {
-      payload.set('vehicleType', vehicleType);
-    }
-    if (serviceType) {
-      payload.set('serviceType', serviceType);
-    }
-    if (bookingDate) {
-      payload.set('bookingDate', bookingDate.toISOString());
-    }
-    formAction(payload);
-  };
+  async function onSubmit(data: BookingFormValues) {
+    setIsSubmitting(true);
+    const result = await createBooking(db, data);
+    
+    toast({
+      title: result.success ? 'Success!' : 'Oops!',
+      description: result.message,
+      variant: result.success ? 'default' : 'destructive',
+      icon: result.success ? <CheckCircle className="text-green-500" /> : <XCircle className="text-red-500" />,
+    });
 
+    if (result.success) {
+      form.reset({ name: '', phone: ''});
+    }
+    setIsSubmitting(false);
+  }
 
   return (
     <Form {...form}>
-      <form action={formDataAction} className="space-y-6">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             control={form.control}
@@ -133,7 +107,7 @@ export function BookingForm({ services }: { services: Service[] }) {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Vehicle Type</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Select a vehicle type" />
@@ -156,7 +130,7 @@ export function BookingForm({ services }: { services: Service[] }) {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Service Type</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Select a service" />
@@ -209,7 +183,10 @@ export function BookingForm({ services }: { services: Service[] }) {
             </FormItem>
           )}
         />
-        <SubmitButton />
+        <Button type="submit" className="w-full" disabled={isSubmitting}>
+            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Book Now
+        </Button>
       </form>
     </Form>
   );

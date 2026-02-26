@@ -2,9 +2,11 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // By default, deny all reads and writes
-    match /{document=**} {
-      allow read, write: if false;
+    match /bookings/{bookingId} {
+      // Anyone can create a booking through the form
+      allow create: if true;
+      // Only authenticated admins can view, update, or delete bookings
+      allow read, update, delete: if request.auth != null;
     }
   }
 }

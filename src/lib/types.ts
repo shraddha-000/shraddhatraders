@@ -16,4 +16,5 @@ export type Booking = {
   serviceType: string;
   bookingDate: Date;
   status: BookingStatus;
+  createdAt?: Date;
 };

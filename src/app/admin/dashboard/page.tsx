@@ -2,13 +2,13 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import { useUser } from '@/firebase';
+import { useUser, useFirestore, useCollection } from '@/firebase'; // import firebase hooks
+import { collection, query, orderBy, Firestore } from 'firebase/firestore'; // import firestore functions
 import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { bookings as allBookings } from '@/lib/data';
 import type { Booking, BookingStatus } from '@/lib/types';
 import { format } from 'date-fns';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -36,22 +36,22 @@ const statusIcons = {
   Cancelled: <XCircle className="mr-2 h-4 w-4 text-red-400" />,
 };
 
-function BookingActions({ booking }: { booking: Booking }) {
+function BookingActions({ booking, db }: { booking: Booking; db: Firestore }) { // Pass db
   const { toast } = useToast();
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [isUpdating, setIsUpdating] = React.useState(false);
   
   const handleDelete = async () => {
     setIsDeleting(true);
-    const result = await deleteBooking(booking.id);
-    toast({ title: result.success ? 'Success' : 'Error', description: result.message });
+    const result = await deleteBooking(db, booking.id); // pass db
+    toast({ title: result.success ? 'Success' : 'Error', description: result.message, variant: result.success ? 'default' : 'destructive' });
     setIsDeleting(false);
   };
   
   const handleStatusUpdate = async (status: BookingStatus) => {
     setIsUpdating(true);
-    const result = await updateBookingStatus(booking.id, status);
-    toast({ title: result.success ? 'Success' : 'Error', description: result.message });
+    const result = await updateBookingStatus(db, booking.id, status); // pass db
+    toast({ title: result.success ? 'Success' : 'Error', description: result.message, variant: result.success ? 'default' : 'destructive' });
     setIsUpdating(false);
   }
 
@@ -79,35 +79,54 @@ function BookingActions({ booking }: { booking: Booking }) {
 }
 
 export default function AdminDashboardPage() {
-  const { user, loading } = useUser();
+  const { user, loading: userLoading } = useUser();
   const router = useRouter();
-  const [bookings, setBookings] = React.useState<Booking[]>(allBookings);
+  const db = useFirestore();
+
+  const bookingsQuery = React.useMemo(() => {
+    if (!db) return null;
+    return query(collection(db, 'bookings'), orderBy('bookingDate', 'desc'));
+  }, [db]);
+  
+  const { data: allBookings, loading: bookingsLoading } = useCollection<Booking>(bookingsQuery);
+
+  const [filteredBookings, setFilteredBookings] = React.useState<Booking[] | null>(null);
   const [statusFilter, setStatusFilter] = React.useState<string>('all');
   const [searchFilter, setSearchFilter] = React.useState<string>('');
 
   React.useEffect(() => {
-    if (!loading && !user) {
+    if (!userLoading && !user) {
       router.push('/admin/login');
     }
-  }, [user, loading, router]);
+  }, [user, userLoading, router]);
 
   React.useEffect(() => {
+    if (!allBookings) return;
     let filtered = allBookings;
     if (statusFilter !== 'all') {
       filtered = filtered.filter(b => b.status === statusFilter);
     }
     if (searchFilter) {
-      filtered = filtered.filter(b => b.name.toLowerCase().includes(searchFilter.toLowerCase()));
+      filtered = filtered.filter(b => 
+        b.name.toLowerCase().includes(searchFilter.toLowerCase()) ||
+        b.serviceType.toLowerCase().includes(searchFilter.toLowerCase())
+      );
     }
-    setBookings(filtered);
-  }, [statusFilter, searchFilter]);
+    setFilteredBookings(filtered);
+  }, [statusFilter, searchFilter, allBookings]);
 
-  if (loading || !user) {
+  const isLoading = userLoading || (bookingsLoading && filteredBookings === null);
+
+  if (isLoading) {
     return (
       <div className="flex min-h-dvh items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
+  }
+
+  if (!user) {
+     return null; // useEffect handles the redirect
   }
 
   return (
@@ -123,7 +142,7 @@ export default function AdminDashboardPage() {
             <CardContent>
               <div className="flex flex-col md:flex-row gap-4 mb-6">
                 <Input 
-                  placeholder="Filter by name..."
+                  placeholder="Filter by name or service..."
                   value={searchFilter}
                   onChange={(e) => setSearchFilter(e.target.value)}
                   className="max-w-sm"
@@ -154,7 +173,21 @@ export default function AdminDashboardPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {bookings.map((booking) => (
+                    {bookingsLoading && (
+                        <TableRow>
+                            <TableCell colSpan={5} className="text-center">
+                                <Loader2 className="mx-auto h-6 w-6 animate-spin" />
+                            </TableCell>
+                        </TableRow>
+                    )}
+                    {!bookingsLoading && filteredBookings && filteredBookings.length === 0 && (
+                        <TableRow>
+                            <TableCell colSpan={5} className="text-center h-24">
+                                No bookings found.
+                            </TableCell>
+                        </TableRow>
+                    )}
+                    {filteredBookings && filteredBookings.map((booking) => (
                       <TableRow key={booking.id}>
                         <TableCell>
                           <div className="font-medium">{booking.name}</div>
@@ -169,7 +202,7 @@ export default function AdminDashboardPage() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
-                          <BookingActions booking={booking} />
+                          <BookingActions booking={booking} db={db} />
                         </TableCell>
                       </TableRow>
                     ))}
