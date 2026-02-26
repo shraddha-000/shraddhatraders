@@ -1,3 +1,34 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "hero-background",
+      "description": "A modern car in a dark garage setting, emphasizing its sleek lines.",
+      "imageUrl": "https://images.unsplash.com/photo-1541348263662-e068662d82af?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxkYXJrJTIwY2FyfGVufDB8fHx8MTc3MjAwNjcyMnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "dark car"
+    },
+    {
+      "id": "car-wash",
+      "description": "A car being washed with high-pressure water and soap.",
+      "imageUrl": "https://images.unsplash.com/photo-1697252312641-561fba5494c8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8Y2FyJTIwd2FzaHxlbnwwfHx8fDE3NzIwOTUwODF8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "car wash"
+    },
+    {
+      "id": "detailing",
+      "description": "Close up of a car's interior being cleaned and detailed.",
+      "imageUrl": "https://images.unsplash.com/photo-1625690180114-5530b1304127?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxjYXIlMjBpbnRlcmlvcnxlbnwwfHx8fDE3NzIwOTE5MzF8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "car interior"
+    },
+    {
+      "id": "ceramic-coating",
+      "description": "A shiny car surface with water beading, showing off a ceramic coat.",
+      "imageUrl": "https://images.unsplash.com/photo-1606100665018-ed3f721f7849?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8Y2FyJTIwcGFpbnR8ZW58MHx8fHwxNzcyMDk3NjQ4fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "car paint"
+    },
+    {
+      "id": "paint-protection",
+      "description": "Applying a paint protection film to a car's hood.",
+      "imageUrl": "https://images.unsplash.com/photo-1727893304219-063d142ce6f3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxjYXIlMjBtYWludGVuYW5jZXxlbnwwfHx8fDE3NzIwOTcyMzd8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "car maintenance"
+    }
+  ]
 }
