@@ -81,7 +81,13 @@ export function BookingForm({ services }: { services: Service[] }) {
   }, [state, toast, form]);
   
   const formDataAction = (payload: FormData) => {
-    const bookingDate = form.getValues('bookingDate');
+    const { vehicleType, serviceType, bookingDate } = form.getValues();
+    if (vehicleType) {
+      payload.set('vehicleType', vehicleType);
+    }
+    if (serviceType) {
+      payload.set('serviceType', serviceType);
+    }
     if (bookingDate) {
       payload.set('bookingDate', bookingDate.toISOString());
     }
