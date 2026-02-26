@@ -6,6 +6,7 @@ import { services } from '@/lib/data';
 import { BookingForm } from '@/components/booking-form';
 
 export default function Home() {
+  const brands = ['Hero', 'Honda', 'Bajaj', 'TVS', 'Suzuki', 'Yamaha', 'Royal Enfield', 'MRF', 'CEAT'];
   return (
     <div className="flex flex-col min-h-dvh">
       <SiteHeader />
@@ -35,13 +36,13 @@ export default function Home() {
                 We offer a range of specialized services to keep your vehicle in top condition.
               </p>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {services.map((service, index) => {
                 return (
                   <Card
                     key={service.id}
                     className="bg-card/30 backdrop-blur-lg border border-border/10 shadow-lg hover:shadow-primary/20 hover:-translate-y-2 transition-all duration-300 animate-fade-in-up"
-                    style={{ animationDelay: `${0.2 * (index + 1)}s` }}
+                    style={{ animationDelay: `${0.1 * (index + 1)}s` }}
                   >
                     <CardHeader>
                       <CardTitle className="text-xl font-bold">{service.title}</CardTitle>
@@ -56,7 +57,27 @@ export default function Home() {
           </div>
         </section>
 
-        <section id="booking-form" className="py-16 md:py-24 bg-background/80">
+        <section id="brands" className="py-16 md:py-24 bg-background/80">
+          <div className="container px-4 md:px-6">
+            <div className="text-center max-w-2xl mx-auto mb-12">
+              <h2 className="text-3xl md:text-4xl font-headline font-bold">Brands We Work With</h2>
+              <p className="mt-3 text-muted-foreground md:text-lg">
+                We use genuine parts from all the leading brands to ensure the best quality for your vehicle.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center justify-center gap-8 md:gap-12">
+              {brands.map((brand) => (
+                <div key={brand} className="text-center">
+                  <p className="text-xl font-semibold text-muted-foreground grayscale hover:grayscale-0 transition-all duration-300">
+                    {brand}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section id="booking-form" className="py-16 md:py-24 bg-background">
           <div className="container px-4 md:px-6">
             <div className="max-w-3xl mx-auto">
               <Card className="bg-card/30 backdrop-blur-lg border border-border/10 shadow-2xl">
