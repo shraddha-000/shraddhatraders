@@ -3,7 +3,7 @@
 import { addDoc, collection, doc, updateDoc, deleteDoc, serverTimestamp, type Firestore } from "firebase/firestore";
 import type { Booking, BookingStatus, PaymentMethod, PaymentStatus } from "./types";
 
-type BookingInput = Omit<Booking, 'id' | 'status' | 'createdAt' | 'paymentStatus' | 'paymentMethod' | 'amount'>;
+type BookingInput = Omit<Booking, 'id' | 'status' | 'createdAt' | 'paymentStatus' | 'paymentMethod'>;
 
 export async function createBooking(db: Firestore, booking: BookingInput) {
   try {
@@ -51,16 +51,5 @@ export async function updateBookingPayment(db: Firestore, bookingId: string, pay
     } catch (error) {
       console.error("Error updating booking payment: ", error);
       return { success: false, message: 'Failed to update payment details.' };
-    }
-}
-
-export async function setBookingAmount(db: Firestore, bookingId: string, amount: number) {
-    try {
-        const bookingRef = doc(db, 'bookings', bookingId);
-        await updateDoc(bookingRef, { amount });
-        return { success: true, message: `Bill amount set to ₹${amount}.` };
-    } catch (error) {
-        console.error("Error setting booking amount: ", error);
-        return { success: false, message: 'Failed to set bill amount.' };
     }
 }
