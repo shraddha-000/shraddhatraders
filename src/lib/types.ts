@@ -7,6 +7,8 @@ export type Service = {
 
 export type VehicleType = 'Car' | 'SUV' | 'Truck' | 'Motorcycle';
 export type BookingStatus = 'Pending' | 'Confirmed' | 'Completed' | 'Cancelled';
+export type PaymentStatus = 'Paid' | 'Pending';
+export type PaymentMethod = 'Cash' | 'Online' | 'N/A';
 
 export type Booking = {
   id: string;
@@ -17,4 +19,6 @@ export type Booking = {
   bookingDate: Date;
   status: BookingStatus;
   createdAt?: Date;
+  paymentStatus?: PaymentStatus;
+  paymentMethod?: PaymentMethod;
 };

@@ -9,12 +9,12 @@ import { SiteFooter } from '@/components/site-footer';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import type { Booking, BookingStatus } from '@/lib/types';
+import type { Booking, BookingStatus, PaymentMethod, PaymentStatus } from '@/lib/types';
 import { format } from 'date-fns';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, Trash2, CheckCircle, Clock, XCircle, Wrench, Loader2, User, Phone, Car } from 'lucide-react';
-import { deleteBooking, updateBookingStatus } from '@/lib/actions';
+import { MoreHorizontal, Trash2, CheckCircle, Clock, XCircle, Wrench, Loader2, User, Phone, Car, DollarSign, CreditCard } from 'lucide-react';
+import { deleteBooking, updateBookingStatus, updateBookingPayment } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
@@ -36,10 +36,33 @@ const statusIcons: { [key in BookingStatus]: React.ReactElement } = {
   Cancelled: <XCircle className="mr-2 h-4 w-4 text-red-400" />,
 };
 
+const getPaymentBadge = (paymentStatus?: PaymentStatus, paymentMethod?: PaymentMethod) => {
+    const status = paymentStatus || 'Pending';
+    const method = paymentMethod || 'N/A';
+
+    if (status === 'Pending') {
+      return <Badge variant="outline">Pending</Badge>;
+    }
+    
+    if (status === 'Paid') {
+      if (method === 'Cash') {
+        return <Badge variant="secondary"><DollarSign className="mr-1 h-3 w-3" />Paid (Cash)</Badge>;
+      }
+      if (method === 'Online') {
+        return <Badge variant="secondary"><CreditCard className="mr-1 h-3 w-3" />Paid (Online)</Badge>;
+      }
+      return <Badge variant="secondary">Paid</Badge>;
+    }
+
+    return <Badge variant="outline">Pending</Badge>;
+}
+
+
 function BookingActions({ booking, db }: { booking: Booking; db: Firestore }) { // Pass db
   const { toast } = useToast();
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [isUpdating, setIsUpdating] = React.useState(false);
+  const [isUpdatingPayment, setIsUpdatingPayment] = React.useState(false);
   
   const handleDelete = async () => {
     setIsDeleting(true);
@@ -55,22 +78,46 @@ function BookingActions({ booking, db }: { booking: Booking; db: Firestore }) { 
     setIsUpdating(false);
   }
 
+  const handlePaymentUpdate = async (paymentStatus: PaymentStatus, paymentMethod: PaymentMethod) => {
+    setIsUpdatingPayment(true);
+    const result = await updateBookingPayment(db, booking.id, paymentStatus, paymentMethod);
+    toast({ title: result.success ? 'Success' : 'Error', description: result.message, variant: result.success ? 'default' : 'destructive' });
+    setIsUpdatingPayment(false);
+  }
+
+  const isActionRunning = isDeleting || isUpdating || isUpdatingPayment;
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="h-8 w-8 p-0" disabled={isDeleting || isUpdating}>
+        <Button variant="ghost" className="h-8 w-8 p-0" disabled={isActionRunning}>
           <span className="sr-only">Open menu</span>
-          {isDeleting || isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : <MoreHorizontal className="h-4 w-4" />}
+          {isActionRunning ? <Loader2 className="h-4 w-4 animate-spin" /> : <MoreHorizontal className="h-4 w-4" />}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuLabel>Actions</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => handleStatusUpdate('Confirmed')}>Mark as Confirmed</DropdownMenuItem>
-        <DropdownMenuItem onClick={() => handleStatusUpdate('Completed')}>Mark as Completed</DropdownMenuItem>
-        <DropdownMenuItem onClick={() => handleStatusUpdate('Cancelled')}>Mark as Cancelled</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => handleStatusUpdate('Confirmed')} disabled={isActionRunning}>Mark as Confirmed</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => handleStatusUpdate('Completed')} disabled={isActionRunning}>Mark as Completed</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => handleStatusUpdate('Cancelled')} disabled={isActionRunning}>Mark as Cancelled</DropdownMenuItem>
+        <DropdownMenuSub>
+            <DropdownMenuSubTrigger disabled={isActionRunning}>Update Payment</DropdownMenuSubTrigger>
+            <DropdownMenuSubContent>
+                <DropdownMenuItem onClick={() => handlePaymentUpdate('Paid', 'Cash')}>
+                    <DollarSign className="mr-2 h-4 w-4" /> Paid (Cash)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handlePaymentUpdate('Paid', 'Online')}>
+                    <CreditCard className="mr-2 h-4 w-4" /> Paid (Online)
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => handlePaymentUpdate('Pending', 'N/A')}>
+                    Mark as Unpaid
+                </DropdownMenuItem>
+            </DropdownMenuSubContent>
+        </DropdownMenuSub>
         <DropdownMenuSeparator />
-        <DropdownMenuItem className="text-red-500 focus:bg-red-500/10 focus:text-red-600" onClick={handleDelete}>
+        <DropdownMenuItem className="text-red-500 focus:bg-red-500/10 focus:text-red-600" onClick={handleDelete} disabled={isActionRunning}>
           <Trash2 className="mr-2 h-4 w-4" /> Delete
         </DropdownMenuItem>
       </DropdownMenuContent>
@@ -93,6 +140,19 @@ export default function AdminDashboardPage() {
   const [filteredBookings, setFilteredBookings] = React.useState<Booking[] | null>(null);
   const [statusFilter, setStatusFilter] = React.useState<string>('all');
   const [searchFilter, setSearchFilter] = React.useState<string>('');
+
+  const popularServices = React.useMemo(() => {
+    if (!allBookings) return [];
+    const serviceCounts = allBookings.reduce((acc, booking) => {
+        acc[booking.serviceType] = (acc[booking.serviceType] || 0) + 1;
+        return acc;
+    }, {} as { [key: string]: number });
+
+    return Object.entries(serviceCounts)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 5);
+  }, [allBookings]);
+
 
   React.useEffect(() => {
     if (!userLoading && !user) {
@@ -194,11 +254,12 @@ export default function AdminDashboardPage() {
                    <Car className="w-4 h-4 mr-2" />
                    <span className="text-muted-foreground">{booking.vehicleType}</span>
                 </div>
-                <div className="flex items-center pt-2">
+                <div className="flex items-center pt-2 gap-2 flex-wrap">
                   <Badge variant={getStatusVariant(booking.status)} className="flex items-center">
                     {statusIcons[booking.status]}
                     <span>{booking.status}</span>
                   </Badge>
+                  {getPaymentBadge(booking.paymentStatus, booking.paymentMethod)}
                 </div>
               </CardContent>
             </Card>
@@ -214,6 +275,7 @@ export default function AdminDashboardPage() {
                 <TableHead>Service</TableHead>
                 <TableHead>Date</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Payment</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -231,6 +293,9 @@ export default function AdminDashboardPage() {
                       {statusIcons[booking.status]}
                       <span>{booking.status}</span>
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {getPaymentBadge(booking.paymentStatus, booking.paymentMethod)}
                   </TableCell>
                   <TableCell className="text-right">
                     <BookingActions booking={booking} db={db} />
@@ -250,6 +315,31 @@ export default function AdminDashboardPage() {
       <SiteHeader />
       <main className="flex-1 py-8 md:py-12">
         <div className="container">
+          <Card className="mb-6 bg-card/30 backdrop-blur-lg border border-border/10">
+            <CardHeader>
+              <CardTitle>Popular Services</CardTitle>
+              <CardDescription>Top 5 most frequently booked services.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {bookingsLoading ? (
+                 <div className="flex justify-center items-center h-24">
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                 </div>
+              ) : popularServices.length > 0 ? (
+                <ul className="space-y-3">
+                  {popularServices.map(([service, count]) => (
+                    <li key={service} className="flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground">{service}</span>
+                      <span className="font-semibold">{count} {count === 1 ? 'booking' : 'bookings'}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-8">Not enough data to show popular services yet.</p>
+              )}
+            </CardContent>
+          </Card>
+          
           <Card className="bg-card/30 backdrop-blur-lg border border-border/10">
             <CardHeader>
               <CardTitle className="text-3xl font-headline">Admin Dashboard</CardTitle>

@@ -35,6 +35,16 @@
             "type": "string",
             "format": "date-time",
             "description": "Timestamp when the booking was created."
+        },
+        "paymentStatus": {
+          "type": "string",
+          "enum": ["Paid", "Pending"],
+          "description": "The payment status of the booking."
+        },
+        "paymentMethod": {
+          "type": "string",
+          "enum": ["Cash", "Online", "N/A"],
+          "description": "How the service was paid for."
         }
       },
       "required": ["name", "phone", "vehicleType", "serviceType", "bookingDate", "status"]
