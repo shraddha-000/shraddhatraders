@@ -72,8 +72,8 @@ export default function ReceiptPage() {
 
   if (!booking || typeof booking.amount === 'undefined') {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-muted">
-        <p>Booking not found or bill has not been generated.</p>
+      <div className="flex min-h-screen items-center justify-center bg-muted p-4 text-center">
+        <p>Booking not found or a bill has not been generated for this service yet.</p>
       </div>
     );
   }
