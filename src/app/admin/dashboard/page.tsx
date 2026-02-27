@@ -18,6 +18,8 @@ import { deleteBooking, updateBookingStatus } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { AnalyticsDashboard } from '@/components/analytics-dashboard';
 
 const getStatusVariant = (status: BookingStatus) => {
   switch (status) {
@@ -115,7 +117,7 @@ export default function AdminDashboardPage() {
     setFilteredBookings(filtered);
   }, [statusFilter, searchFilter, allBookings]);
 
-  const isLoading = userLoading || (bookingsLoading && filteredBookings === null);
+  const isLoading = userLoading || (bookingsLoading && allBookings === null);
 
   if (isLoading) {
     return (
@@ -129,8 +131,8 @@ export default function AdminDashboardPage() {
      return null; // useEffect handles the redirect
   }
 
-  const renderContent = () => {
-    if (bookingsLoading) {
+  const renderBookingsContent = () => {
+    if (bookingsLoading && !filteredBookings) {
       return (
         <div className="flex justify-center items-center h-24">
           <Loader2 className="h-6 w-6 animate-spin" />
@@ -146,6 +148,28 @@ export default function AdminDashboardPage() {
     }
     return (
       <>
+        {/* Filter Section */}
+        <div className="flex flex-col md:flex-row gap-4 mb-6">
+          <Input 
+            placeholder="Filter by name or service..."
+            value={searchFilter}
+            onChange={(e) => setSearchFilter(e.target.value)}
+            className="max-w-sm"
+          />
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-full md:w-[180px]">
+              <SelectValue placeholder="Filter by status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="Pending">Pending</SelectItem>
+              <SelectItem value="Confirmed">Confirmed</SelectItem>
+              <SelectItem value="Completed">Completed</SelectItem>
+              <SelectItem value="Cancelled">Cancelled</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        
         {/* Mobile View */}
         <div className="md:hidden space-y-4">
           {filteredBookings?.map((booking) => (
@@ -231,32 +255,21 @@ export default function AdminDashboardPage() {
           <Card className="bg-card/30 backdrop-blur-lg border border-border/10">
             <CardHeader>
               <CardTitle className="text-3xl font-headline">Admin Dashboard</CardTitle>
-              <CardDescription>Manage all service bookings.</CardDescription>
+              <CardDescription>Manage bookings and view analytics.</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-col md:flex-row gap-4 mb-6">
-                <Input 
-                  placeholder="Filter by name or service..."
-                  value={searchFilter}
-                  onChange={(e) => setSearchFilter(e.target.value)}
-                  className="max-w-sm"
-                />
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-full md:w-[180px]">
-                    <SelectValue placeholder="Filter by status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Statuses</SelectItem>
-                    <SelectItem value="Pending">Pending</SelectItem>
-                    <SelectItem value="Confirmed">Confirmed</SelectItem>
-                    <SelectItem value="Completed">Completed</SelectItem>
-                    <SelectItem value="Cancelled">Cancelled</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {renderContent()}
-
+              <Tabs defaultValue="bookings" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="bookings">Bookings</TabsTrigger>
+                  <TabsTrigger value="analytics">Analytics</TabsTrigger>
+                </TabsList>
+                <TabsContent value="bookings" className="mt-6">
+                  {renderBookingsContent()}
+                </TabsContent>
+                <TabsContent value="analytics" className="mt-6">
+                  <AnalyticsDashboard bookings={allBookings} />
+                </TabsContent>
+              </Tabs>
             </CardContent>
           </Card>
         </div>
