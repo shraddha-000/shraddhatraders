@@ -8,6 +8,11 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  devIndicators: {
+    allowedDevOrigins: [
+        'https://*.cloudworkstations.dev',
+    ],
+  },
 };
 
 export default nextConfig;
