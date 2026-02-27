@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import React, { useState } from 'react';
-import { CalendarIcon, CheckCircle, Loader2, XCircle } from 'lucide-react';
+import { CalendarIcon, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 
 import { Button } from '@/components/ui/button';
@@ -60,7 +60,6 @@ export function BookingForm({ services }: { services: Service[] }) {
       title: result.success ? 'Success!' : 'Oops!',
       description: result.message,
       variant: result.success ? 'default' : 'destructive',
-      icon: result.success ? <CheckCircle className="text-green-500" /> : <XCircle className="text-red-500" />,
     });
 
     if (result.success) {
