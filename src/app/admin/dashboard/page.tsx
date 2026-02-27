@@ -13,7 +13,7 @@ import type { Booking, BookingStatus } from '@/lib/types';
 import { format } from 'date-fns';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, Trash2, CheckCircle, Clock, XCircle, Wrench, Loader2 } from 'lucide-react';
+import { MoreHorizontal, Trash2, CheckCircle, Clock, XCircle, Wrench, Loader2, User, Phone, Car } from 'lucide-react';
 import { deleteBooking, updateBookingStatus } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -29,7 +29,7 @@ const getStatusVariant = (status: BookingStatus) => {
   }
 };
 
-const statusIcons = {
+const statusIcons: { [key in BookingStatus]: React.ReactElement } = {
   Pending: <Clock className="mr-2 h-4 w-4" />,
   Confirmed: <CheckCircle className="mr-2 h-4 w-4 text-green-400" />,
   Completed: <Wrench className="mr-2 h-4 w-4 text-blue-400" />,
@@ -129,10 +129,104 @@ export default function AdminDashboardPage() {
      return null; // useEffect handles the redirect
   }
 
+  const renderContent = () => {
+    if (bookingsLoading) {
+      return (
+        <div className="flex justify-center items-center h-24">
+          <Loader2 className="h-6 w-6 animate-spin" />
+        </div>
+      );
+    }
+    if (filteredBookings && filteredBookings.length === 0) {
+      return (
+        <div className="text-center h-24 py-10">
+          No bookings found.
+        </div>
+      );
+    }
+    return (
+      <>
+        {/* Mobile View */}
+        <div className="md:hidden space-y-4">
+          {filteredBookings?.map((booking) => (
+            <Card key={booking.id} className="w-full">
+              <CardHeader>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <CardTitle className="text-lg">{booking.serviceType}</CardTitle>
+                    <CardDescription>{format(booking.bookingDate, 'PPp')}</CardDescription>
+                  </div>
+                  <BookingActions booking={booking} db={db} />
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm">
+                <div className="flex items-center">
+                  <User className="w-4 h-4 mr-2" />
+                  <span className="font-medium">{booking.name}</span>
+                </div>
+                <div className="flex items-center">
+                  <Phone className="w-4 h-4 mr-2" />
+                  <span className="text-muted-foreground">{booking.phone}</span>
+                </div>
+                <div className="flex items-center">
+                   <Car className="w-4 h-4 mr-2" />
+                   <span className="text-muted-foreground">{booking.vehicleType}</span>
+                </div>
+                <div className="flex items-center pt-2">
+                  <Badge variant={getStatusVariant(booking.status)} className="flex items-center">
+                    {statusIcons[booking.status]}
+                    <span>{booking.status}</span>
+                  </Badge>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Desktop View */}
+        <div className="hidden md:block overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Customer</TableHead>
+                <TableHead>Service</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredBookings?.map((booking) => (
+                <TableRow key={booking.id}>
+                  <TableCell>
+                    <div className="font-medium">{booking.name}</div>
+                    <div className="text-sm text-muted-foreground">{booking.phone}</div>
+                  </TableCell>
+                  <TableCell>{booking.serviceType}</TableCell>
+                  <TableCell>{format(booking.bookingDate, 'PPp')}</TableCell>
+                  <TableCell>
+                      <Badge variant={getStatusVariant(booking.status)} className="flex items-center w-fit">
+                      {statusIcons[booking.status]}
+                      <span>{booking.status}</span>
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <BookingActions booking={booking} db={db} />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </>
+    );
+  };
+
+
   return (
     <div className="flex flex-col min-h-dvh">
       <SiteHeader />
-      <main className="flex-1 py-12 md:py-16">
+      <main className="flex-1 py-8 md:py-12">
         <div className="container">
           <Card className="bg-card/30 backdrop-blur-lg border border-border/10">
             <CardHeader>
@@ -161,54 +255,8 @@ export default function AdminDashboardPage() {
                 </Select>
               </div>
 
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Customer</TableHead>
-                      <TableHead>Service</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {bookingsLoading && (
-                        <TableRow>
-                            <TableCell colSpan={5} className="text-center">
-                                <Loader2 className="mx-auto h-6 w-6 animate-spin" />
-                            </TableCell>
-                        </TableRow>
-                    )}
-                    {!bookingsLoading && filteredBookings && filteredBookings.length === 0 && (
-                        <TableRow>
-                            <TableCell colSpan={5} className="text-center h-24">
-                                No bookings found.
-                            </TableCell>
-                        </TableRow>
-                    )}
-                    {filteredBookings && filteredBookings.map((booking) => (
-                      <TableRow key={booking.id}>
-                        <TableCell>
-                          <div className="font-medium">{booking.name}</div>
-                          <div className="text-sm text-muted-foreground">{booking.phone}</div>
-                        </TableCell>
-                        <TableCell>{booking.serviceType}</TableCell>
-                        <TableCell>{format(booking.bookingDate, 'PPp')}</TableCell>
-                        <TableCell>
-                           <Badge variant={getStatusVariant(booking.status)} className="flex items-center w-fit">
-                            {statusIcons[booking.status]}
-                            <span>{booking.status}</span>
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <BookingActions booking={booking} db={db} />
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+              {renderContent()}
+
             </CardContent>
           </Card>
         </div>

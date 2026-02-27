@@ -12,7 +12,7 @@ import { useFirestore } from '@/firebase';
 import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Loader2, Search } from 'lucide-react';
+import { Loader2, Search, Wrench, Calendar, Car } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const getStatusVariant = (status: BookingStatus) => {
@@ -41,7 +41,7 @@ export default function BookingsPage() {
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!phone || phone.length !== 10) {
+    if (!phone || !/^\d{10}$/.test(phone)) {
       toast({
         title: 'Invalid Phone Number',
         description: 'Please enter a valid 10-digit phone number.',
@@ -91,6 +91,83 @@ export default function BookingsPage() {
       setIsLoading(false);
     }
   };
+  
+  const renderBookings = () => {
+    if (isLoading) {
+      return (
+        <div className="flex justify-center items-center h-24">
+          <Loader2 className="h-6 w-6 animate-spin" />
+        </div>
+      );
+    }
+    if (!hasSearched) {
+      return (
+        <div className="text-center h-24 py-10 text-muted-foreground">
+          Enter your phone number to find your bookings.
+        </div>
+      );
+    }
+    if (userBookings.length === 0) {
+      return (
+        <div className="text-center h-24 py-10 text-muted-foreground">
+          No bookings found for this phone number.
+        </div>
+      );
+    }
+    return (
+       <>
+        {/* Mobile View */}
+        <div className="md:hidden space-y-4">
+          {userBookings.map((booking) => (
+            <Card key={booking.id} className="w-full">
+               <CardHeader>
+                <div className="flex justify-between items-start">
+                    <CardTitle className="text-lg">{booking.serviceType}</CardTitle>
+                    <Badge variant={getStatusVariant(booking.status)}>{booking.status}</Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm">
+                <div className="flex items-center text-muted-foreground">
+                  <Calendar className="w-4 h-4 mr-2" />
+                  <span>{format(booking.bookingDate, 'PPp')}</span>
+                </div>
+                <div className="flex items-center text-muted-foreground">
+                  <Car className="w-4 h-4 mr-2" />
+                  <span>{booking.vehicleType}</span>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Desktop view */}
+        <div className="hidden md:block overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Service</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Vehicle</TableHead>
+                <TableHead className="text-right">Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {userBookings.map((booking) => (
+                <TableRow key={booking.id}>
+                  <TableCell>{booking.serviceType}</TableCell>
+                  <TableCell>{format(booking.bookingDate, 'PPp')}</TableCell>
+                  <TableCell>{booking.vehicleType}</TableCell>
+                  <TableCell className="text-right">
+                    <Badge variant={getStatusVariant(booking.status)}>{booking.status}</Badge>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </>
+    )
+  }
 
   return (
     <div className="flex flex-col min-h-dvh">
@@ -103,65 +180,23 @@ export default function BookingsPage() {
               <CardDescription>Enter your phone number to find your service appointments.</CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-4 mb-8 max-w-lg">
+              <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-4 mb-8 max-w-lg">
                 <Input 
                   type="tel"
                   placeholder="Enter your 10-digit phone number"
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  onChange={(e) => setPhone(e.target.value.replace(/[^0-9]/g, ''))}
                   maxLength={10}
+                  pattern="\d{10}"
                   className="flex-1"
                 />
-                <Button type="submit" disabled={isLoading}>
+                <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
                   {isLoading ? <Loader2 className="animate-spin mr-2" /> : <Search className="mr-2" />}
-                  Search Bookings
+                  Search
                 </Button>
               </form>
 
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Service</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Vehicle</TableHead>
-                      <TableHead className="text-right">Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {isLoading ? (
-                      <TableRow>
-                        <TableCell colSpan={4} className="text-center h-24">
-                          <Loader2 className="mx-auto h-6 w-6 animate-spin" />
-                        </TableCell>
-                      </TableRow>
-                    ) : !hasSearched ? (
-                       <TableRow>
-                        <TableCell colSpan={4} className="text-center h-24 text-muted-foreground">
-                          Enter your phone number to find your bookings.
-                        </TableCell>
-                      </TableRow>
-                    ) : userBookings.length > 0 ? (
-                      userBookings.map((booking) => (
-                        <TableRow key={booking.id}>
-                          <TableCell>{booking.serviceType}</TableCell>
-                          <TableCell>{format(booking.bookingDate, 'PPp')}</TableCell>
-                          <TableCell>{booking.vehicleType}</TableCell>
-                          <TableCell className="text-right">
-                            <Badge variant={getStatusVariant(booking.status)}>{booking.status}</Badge>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={4} className="text-center h-24 text-muted-foreground">
-                          No bookings found for this phone number.
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
+              {renderBookings()}
             </CardContent>
           </Card>
         </div>
