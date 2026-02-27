@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useUser, useFirestore, useCollection } from '@/firebase'; // import firebase hooks
 import { collection, query, orderBy, Firestore } from 'firebase/firestore'; // import firestore functions
@@ -13,11 +14,12 @@ import type { Booking, BookingStatus, PaymentMethod, PaymentStatus } from '@/lib
 import { format } from 'date-fns';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, Trash2, CheckCircle, Clock, XCircle, Wrench, Loader2, User, Phone, Car, DollarSign, CreditCard } from 'lucide-react';
+import { MoreHorizontal, Trash2, CheckCircle, Clock, XCircle, Wrench, Loader2, User, Phone, Car, DollarSign, CreditCard, FileText } from 'lucide-react';
 import { deleteBooking, updateBookingStatus, updateBookingPayment } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
+import { GenerateBillDialog } from '@/components/generate-bill-dialog';
 
 const getStatusVariant = (status: BookingStatus) => {
   switch (status) {
@@ -58,7 +60,7 @@ const getPaymentBadge = (paymentStatus?: PaymentStatus, paymentMethod?: PaymentM
 }
 
 
-function BookingActions({ booking, db }: { booking: Booking; db: Firestore }) { // Pass db
+function BookingActions({ booking, db, onGenerateBill }: { booking: Booking; db: Firestore; onGenerateBill: (bookingId: string) => void; }) {
   const { toast } = useToast();
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [isUpdating, setIsUpdating] = React.useState(false);
@@ -66,14 +68,14 @@ function BookingActions({ booking, db }: { booking: Booking; db: Firestore }) { 
   
   const handleDelete = async () => {
     setIsDeleting(true);
-    const result = await deleteBooking(db, booking.id); // pass db
+    const result = await deleteBooking(db, booking.id);
     toast({ title: result.success ? 'Success' : 'Error', description: result.message, variant: result.success ? 'default' : 'destructive' });
     setIsDeleting(false);
   };
   
   const handleStatusUpdate = async (status: BookingStatus) => {
     setIsUpdating(true);
-    const result = await updateBookingStatus(db, booking.id, status); // pass db
+    const result = await updateBookingStatus(db, booking.id, status);
     toast({ title: result.success ? 'Success' : 'Error', description: result.message, variant: result.success ? 'default' : 'destructive' });
     setIsUpdating(false);
   }
@@ -98,9 +100,22 @@ function BookingActions({ booking, db }: { booking: Booking; db: Firestore }) { 
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-          <DropdownMenuItem onClick={() => handleStatusUpdate('Confirmed')} disabled={isActionRunning}>Mark as Confirmed</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => handleStatusUpdate('Completed')} disabled={isActionRunning}>Mark as Completed</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => handleStatusUpdate('Cancelled')} disabled={isActionRunning}>Mark as Cancelled</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => handleStatusUpdate('Confirmed')} disabled={booking.status === 'Confirmed' || isActionRunning}>Mark as Confirmed</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => handleStatusUpdate('Completed')} disabled={booking.status === 'Completed' || isActionRunning}>Mark as Completed</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => handleStatusUpdate('Cancelled')} disabled={booking.status === 'Cancelled' || isActionRunning}>Mark as Cancelled</DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => onGenerateBill(booking.id)} disabled={isActionRunning}>
+            <FileText className="mr-2 h-4 w-4" />
+            {booking.amount ? 'Edit Bill' : 'Generate Bill'}
+          </DropdownMenuItem>
+          {booking.amount && (
+            <DropdownMenuItem asChild disabled={isActionRunning}>
+                <Link href={`/receipt/${booking.id}`} target="_blank">
+                    <FileText className="mr-2 h-4 w-4" />
+                    View Receipt
+                </Link>
+            </DropdownMenuItem>
+          )}
           <DropdownMenuSub>
               <DropdownMenuSubTrigger disabled={isActionRunning}>Update Payment</DropdownMenuSubTrigger>
               <DropdownMenuSubContent>
@@ -130,6 +145,9 @@ export default function AdminDashboardPage() {
   const { user, loading: userLoading } = useUser();
   const router = useRouter();
   const db = useFirestore();
+
+  const [isBillDialogOpen, setIsBillDialogOpen] = React.useState(false);
+  const [selectedBooking, setSelectedBooking] = React.useState<Booking | null>(null);
 
   const bookingsQuery = React.useMemo(() => {
     if (!db) return null;
@@ -175,6 +193,12 @@ export default function AdminDashboardPage() {
     }
     setFilteredBookings(filtered);
   }, [statusFilter, searchFilter, allBookings]);
+  
+  const handleGenerateBill = (bookingId: string) => {
+    const bookingToBill = allBookings?.find(b => b.id === bookingId) || null;
+    setSelectedBooking(bookingToBill);
+    setIsBillDialogOpen(true);
+  }
 
   const isLoading = userLoading || (bookingsLoading && allBookings === null);
 
@@ -239,11 +263,11 @@ export default function AdminDashboardPage() {
                     <CardTitle className="text-lg">{booking.serviceType}</CardTitle>
                     <CardDescription>{format(booking.bookingDate, 'PPp')}</CardDescription>
                   </div>
-                  <BookingActions booking={booking} db={db} />
+                  <BookingActions booking={booking} db={db} onGenerateBill={handleGenerateBill} />
                 </div>
               </CardHeader>
               <CardContent className="space-y-3 text-sm">
-                <div className="flex items-center">
+                 <div className="flex items-center">
                   <User className="w-4 h-4 mr-2" />
                   <span className="font-medium">{booking.name}</span>
                 </div>
@@ -255,6 +279,12 @@ export default function AdminDashboardPage() {
                    <Car className="w-4 h-4 mr-2" />
                    <span className="text-muted-foreground">{booking.vehicleType}</span>
                 </div>
+                 {booking.amount && (
+                  <div className="flex items-center font-medium">
+                     <DollarSign className="w-4 h-4 mr-2" />
+                     <span>₹{booking.amount.toFixed(2)}</span>
+                  </div>
+                )}
                 <div className="flex items-center pt-2 gap-2 flex-wrap">
                   <Badge variant={getStatusVariant(booking.status)} className="flex items-center">
                     {statusIcons[booking.status]}
@@ -277,6 +307,7 @@ export default function AdminDashboardPage() {
                 <TableHead>Date</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Payment</TableHead>
+                <TableHead>Amount</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -298,8 +329,11 @@ export default function AdminDashboardPage() {
                   <TableCell>
                     {getPaymentBadge(booking.paymentStatus, booking.paymentMethod)}
                   </TableCell>
+                  <TableCell>
+                    {booking.amount ? `₹${booking.amount.toFixed(2)}` : '-'}
+                  </TableCell>
                   <TableCell className="text-right">
-                    <BookingActions booking={booking} db={db} />
+                    <BookingActions booking={booking} db={db} onGenerateBill={handleGenerateBill} />
                   </TableCell>
                 </TableRow>
               ))}
@@ -353,6 +387,15 @@ export default function AdminDashboardPage() {
         </div>
       </main>
       <SiteFooter />
+       {selectedBooking && db && (
+        <GenerateBillDialog
+          open={isBillDialogOpen}
+          onOpenChange={setIsBillDialogOpen}
+          bookingId={selectedBooking.id}
+          currentAmount={selectedBooking.amount}
+          db={db}
+        />
+      )}
     </div>
   );
 }

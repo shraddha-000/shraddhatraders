@@ -70,7 +70,7 @@ export default function ReceiptPage() {
     );
   }
 
-  if (!booking || !booking.amount) {
+  if (!booking || typeof booking.amount === 'undefined') {
     return (
       <div className="flex min-h-screen items-center justify-center bg-muted">
         <p>Booking not found or bill has not been generated.</p>
@@ -160,6 +160,13 @@ export default function ReceiptPage() {
                     <span>₹{total.toFixed(2)}</span>
                 </div>
             </div>
+             <div className="mt-8">
+              <h3 className="font-semibold mb-2 text-muted-foreground">Payment Details</h3>
+              <div className="text-sm">
+                <p>Status: <span className="font-medium">{booking.paymentStatus}</span></p>
+                {booking.paymentStatus === 'Paid' && <p>Method: <span className="font-medium">{booking.paymentMethod}</span></p>}
+              </div>
+            </div>
 
             <div className="mt-12 text-center text-xs text-muted-foreground">
                 <p>Thank you for your business!</p>
@@ -178,19 +185,13 @@ export default function ReceiptPage() {
           .print\\:hidden {
             display: none;
           }
-          .max-w-2xl {
-            max-width: 100%;
-            box-shadow: none;
+          #receipt {
+             box-shadow: none !important;
+             border: none !important;
           }
-          .bg-muted {
-             background-color: #fff !important;
-          }
-           .shadow-lg {
-            box-shadow: none !important;
-          }
-           .border {
-            border: 1px solid #e5e7eb !important;
-          }
+           .bg-muted, .bg-muted\\/30 {
+             background-color: transparent !important;
+           }
         }
       `}</style>
     </div>
