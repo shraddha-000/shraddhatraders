@@ -47,7 +47,7 @@ export function useCollection<T extends Document>(query: Query<DocumentData> | n
 
     return () => unsubscribe();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query ? query.path : null]);
+  }, [query]);
 
   return { data, loading, error };
 }
