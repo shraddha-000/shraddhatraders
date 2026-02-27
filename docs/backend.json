@@ -45,6 +45,10 @@
           "type": "string",
           "enum": ["Cash", "Online", "N/A"],
           "description": "How the service was paid for."
+        },
+        "amount": {
+          "type": "number",
+          "description": "The total amount to be paid for the booking."
         }
       },
       "required": ["name", "phone", "vehicleType", "serviceType", "bookingDate", "status"]
