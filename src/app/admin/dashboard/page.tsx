@@ -18,8 +18,6 @@ import { deleteBooking, updateBookingStatus } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AnalyticsDashboard } from '@/components/analytics-dashboard';
 
 const getStatusVariant = (status: BookingStatus) => {
   switch (status) {
@@ -255,21 +253,10 @@ export default function AdminDashboardPage() {
           <Card className="bg-card/30 backdrop-blur-lg border border-border/10">
             <CardHeader>
               <CardTitle className="text-3xl font-headline">Admin Dashboard</CardTitle>
-              <CardDescription>Manage bookings and view analytics.</CardDescription>
+              <CardDescription>Manage all service bookings.</CardDescription>
             </CardHeader>
             <CardContent>
-              <Tabs defaultValue="bookings" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="bookings">Bookings</TabsTrigger>
-                  <TabsTrigger value="analytics">Analytics</TabsTrigger>
-                </TabsList>
-                <TabsContent value="bookings" className="mt-6">
-                  {renderBookingsContent()}
-                </TabsContent>
-                <TabsContent value="analytics" className="mt-6">
-                  <AnalyticsDashboard bookings={allBookings} />
-                </TabsContent>
-              </Tabs>
+              {renderBookingsContent()}
             </CardContent>
           </Card>
         </div>
