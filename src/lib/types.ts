@@ -21,5 +21,4 @@ export type Booking = {
   createdAt?: Date;
   paymentStatus?: PaymentStatus;
   paymentMethod?: PaymentMethod;
-  amount?: number;
 };

@@ -6,7 +6,7 @@ import type { Booking, BookingStatus, PaymentMethod, PaymentStatus } from "./typ
 // Note: These are no longer server actions. They are client-side functions
 // that need a Firestore instance.
 
-type BookingInput = Omit<Booking, 'id' | 'status' | 'createdAt' | 'paymentStatus' | 'paymentMethod' | 'amount'>;
+type BookingInput = Omit<Booking, 'id' | 'status' | 'createdAt' | 'paymentStatus' | 'paymentMethod'>;
 
 export async function createBooking(db: Firestore, booking: BookingInput) {
   try {
@@ -54,19 +54,5 @@ export async function updateBookingPayment(db: Firestore, bookingId: string, pay
     } catch (error) {
       console.error("Error updating booking payment: ", error);
       return { success: false, message: 'Failed to update payment details.' };
-    }
-}
-
-export async function setBookingAmount(db: Firestore, bookingId: string, amount: number) {
-    if (isNaN(amount) || amount <= 0) {
-        return { success: false, message: 'Please enter a valid amount.' };
-    }
-    try {
-      const bookingRef = doc(db, 'bookings', bookingId);
-      await updateDoc(bookingRef, { amount: Number(amount) });
-      return { success: true, message: `Bill for booking ${bookingId} updated.` };
-    } catch (error) {
-      console.error("Error updating booking amount: ", error);
-      return { success: false, message: 'Failed to update bill.' };
     }
 }

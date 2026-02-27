@@ -13,12 +13,11 @@ import type { Booking, BookingStatus, PaymentMethod, PaymentStatus } from '@/lib
 import { format } from 'date-fns';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, Trash2, CheckCircle, Clock, XCircle, Wrench, Loader2, User, Phone, Car, DollarSign, CreditCard, FileText, Edit } from 'lucide-react';
+import { MoreHorizontal, Trash2, CheckCircle, Clock, XCircle, Wrench, Loader2, User, Phone, Car, DollarSign, CreditCard } from 'lucide-react';
 import { deleteBooking, updateBookingStatus, updateBookingPayment } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { GenerateBillDialog } from '@/components/generate-bill-dialog';
 
 const getStatusVariant = (status: BookingStatus) => {
   switch (status) {
@@ -64,7 +63,6 @@ function BookingActions({ booking, db }: { booking: Booking; db: Firestore }) { 
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [isUpdating, setIsUpdating] = React.useState(false);
   const [isUpdatingPayment, setIsUpdatingPayment] = React.useState(false);
-  const [isBillDialogOpen, setIsBillDialogOpen] = React.useState(false);
   
   const handleDelete = async () => {
     setIsDeleting(true);
@@ -100,17 +98,6 @@ function BookingActions({ booking, db }: { booking: Booking; db: Firestore }) { 
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-          <DropdownMenuItem onClick={() => setIsBillDialogOpen(true)} disabled={isActionRunning}>
-            {booking.amount ? <Edit className="mr-2 h-4 w-4" /> : <FileText className="mr-2 h-4 w-4" />}
-            {booking.amount ? 'Edit Bill' : 'Generate Bill'}
-          </DropdownMenuItem>
-
-          {booking.amount && booking.amount > 0 && (
-            <DropdownMenuItem onClick={() => window.open(`/receipt/${booking.id}`, '_blank')} disabled={isActionRunning}>
-                <FileText className="mr-2 h-4 w-4" /> View Receipt
-            </DropdownMenuItem>
-          )}
-          <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => handleStatusUpdate('Confirmed')} disabled={isActionRunning}>Mark as Confirmed</DropdownMenuItem>
           <DropdownMenuItem onClick={() => handleStatusUpdate('Completed')} disabled={isActionRunning}>Mark as Completed</DropdownMenuItem>
           <DropdownMenuItem onClick={() => handleStatusUpdate('Cancelled')} disabled={isActionRunning}>Mark as Cancelled</DropdownMenuItem>
@@ -135,14 +122,6 @@ function BookingActions({ booking, db }: { booking: Booking; db: Firestore }) { 
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-
-      <GenerateBillDialog
-        open={isBillDialogOpen}
-        onOpenChange={setIsBillDialogOpen}
-        bookingId={booking.id}
-        currentAmount={booking.amount}
-        db={db}
-      />
     </>
   );
 }
@@ -276,10 +255,6 @@ export default function AdminDashboardPage() {
                    <Car className="w-4 h-4 mr-2" />
                    <span className="text-muted-foreground">{booking.vehicleType}</span>
                 </div>
-                 <div className="flex items-center">
-                    <FileText className="w-4 h-4 mr-2" />
-                    <span className="text-muted-foreground">{booking.amount ? `₹${booking.amount.toFixed(2)}` : 'Amount not set'}</span>
-                </div>
                 <div className="flex items-center pt-2 gap-2 flex-wrap">
                   <Badge variant={getStatusVariant(booking.status)} className="flex items-center">
                     {statusIcons[booking.status]}
@@ -300,7 +275,6 @@ export default function AdminDashboardPage() {
                 <TableHead>Customer</TableHead>
                 <TableHead>Service</TableHead>
                 <TableHead>Date</TableHead>
-                <TableHead>Amount</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Payment</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -315,9 +289,6 @@ export default function AdminDashboardPage() {
                   </TableCell>
                   <TableCell>{booking.serviceType}</TableCell>
                   <TableCell>{format(booking.bookingDate, 'PPp')}</TableCell>
-                   <TableCell>
-                    {booking.amount ? `₹${booking.amount.toFixed(2)}` : <span className="text-muted-foreground">N/A</span>}
-                  </TableCell>
                   <TableCell>
                       <Badge variant={getStatusVariant(booking.status)} className="flex items-center w-fit">
                       {statusIcons[booking.status]}
