@@ -106,7 +106,7 @@ function BookingActions({ booking, db, onGenerateBill, onActionSuccess }: { book
           <DropdownMenuLabel>Actions</DropdownMenuLabel>
           {booking.amount ? (
             <DropdownMenuItem asChild>
-                <Link href={`/receipt/${booking.id}`} target="_blank"><FileText className="mr-2 h-4 w-4" /> View Receipt</Link>
+                <Link href={`/receipt?id=${booking.id}`} target="_blank"><FileText className="mr-2 h-4 w-4" /> View Receipt</Link>
             </DropdownMenuItem>
           ) : (
             <DropdownMenuItem onClick={() => onGenerateBill(booking)} disabled={isActionRunning}>
