@@ -1,15 +1,19 @@
 // This page is deprecated and has been replaced by /receipt?id=...
-// The generateStaticParams function is added to prevent this dynamic route
-// from requiring a server function, which is incompatible with the Firebase Spark plan.
+// The configuration below ensures this dynamic route does not require a server
+// function, which is incompatible with the Firebase Spark plan.
 
+// By returning an empty array, we tell Next.js not to pre-render any pages
+// for this dynamic route at build time.
 export async function generateStaticParams() {
-  // Return an empty array to ensure no pages are generated for this route at build time.
   return [];
 }
 
-// By returning null, Next.js will render a 404 page for any path that would match this dynamic segment.
-// This effectively disables the route at build time, satisfying static export requirements.
+// By setting dynamicParams to false, we tell Next.js to return a 404 page
+// for any path that was not generated at build time. This prevents on-demand
+// server-side rendering (the "fallback") and the need for a Cloud Function.
+export const dynamicParams = false;
+
+// The component itself returns null, as it should never be rendered.
 export default function DeprecatedReceiptPage() {
-  // This component is now a server component and does not contain client-side logic.
   return null;
 }
