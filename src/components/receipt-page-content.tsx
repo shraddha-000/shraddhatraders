@@ -19,8 +19,10 @@ export function ReceiptPageContent({ id }: { id: string }) {
 
   React.useEffect(() => {
     if (!id || !db) {
-      setError('Missing booking ID or database connection.');
-      setLoading(false);
+      if (!id) {
+        setError('Missing booking ID.');
+        setLoading(false);
+      }
       return;
     }
 
@@ -38,11 +40,11 @@ export function ReceiptPageContent({ id }: { id: string }) {
 
           setBooking({ id: docSnap.id, ...data, bookingDate, createdAt } as Booking);
         } else {
-          setError("No such document!");
+          setError("Receipt not found.");
           console.log("No such document!");
         }
       } catch (error) {
-        setError("Error fetching document.");
+        setError("Error fetching receipt.");
         console.error("Error fetching document:", error);
       } finally {
         setLoading(false);
@@ -60,10 +62,18 @@ export function ReceiptPageContent({ id }: { id: string }) {
     );
   }
 
-  if (error || !booking) {
+  if (error) {
     return (
       <div className="flex min-h-dvh items-center justify-center">
-        <p>{error || 'Receipt not found.'}</p>
+        <p>{error}</p>
+      </div>
+    );
+  }
+  
+  if (!booking || !booking.amount) {
+     return (
+      <div className="flex min-h-dvh items-center justify-center">
+        <p>Receipt not available. A bill may not have been generated for this booking yet.</p>
       </div>
     );
   }
