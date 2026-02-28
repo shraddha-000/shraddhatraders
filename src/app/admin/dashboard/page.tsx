@@ -13,11 +13,13 @@ import type { Booking, BookingStatus, PaymentMethod, PaymentStatus } from '@/lib
 import { format } from 'date-fns';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, Trash2, CheckCircle, Clock, XCircle, Wrench, Loader2, User, Phone, Car, DollarSign, CreditCard } from 'lucide-react';
-import { deleteBooking, updateBookingStatus, updateBookingPayment } from '@/lib/actions';
+import { MoreHorizontal, Trash2, CheckCircle, Clock, XCircle, Wrench, Loader2, User, Phone, Car, DollarSign, CreditCard, Receipt, TrendingUp, Book, FileText } from 'lucide-react';
+import { deleteBooking, updateBookingStatus, updateBookingPayment, addBillToBooking } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
+import { GenerateBillDialog } from '@/components/generate-bill-dialog';
+import Link from 'next/link';
 
 
 const getStatusVariant = (status: BookingStatus) => {
@@ -59,7 +61,7 @@ const getPaymentBadge = (paymentStatus?: PaymentStatus, paymentMethod?: PaymentM
 }
 
 
-function BookingActions({ booking, db }: { booking: Booking; db: Firestore; }) {
+function BookingActions({ booking, db, onGenerateBill }: { booking: Booking; db: Firestore; onGenerateBill: (booking: Booking) => void; }) {
   const { toast } = useToast();
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [isUpdating, setIsUpdating] = React.useState(false);
@@ -99,6 +101,16 @@ function BookingActions({ booking, db }: { booking: Booking; db: Firestore; }) {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>Actions</DropdownMenuLabel>
+          {booking.amount ? (
+            <DropdownMenuItem asChild>
+                <Link href={`/receipt/${booking.id}`} target="_blank"><FileText className="mr-2 h-4 w-4" /> View Receipt</Link>
+            </DropdownMenuItem>
+          ) : (
+            <DropdownMenuItem onClick={() => onGenerateBill(booking)} disabled={isActionRunning}>
+                <Receipt className="mr-2 h-4 w-4" /> Generate Bill
+            </DropdownMenuItem>
+          )}
+          <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => handleStatusUpdate('Confirmed')} disabled={booking.status === 'Confirmed' || isActionRunning}>Mark as Confirmed</DropdownMenuItem>
           <DropdownMenuItem onClick={() => handleStatusUpdate('Completed')} disabled={booking.status === 'Completed' || isActionRunning}>Mark as Completed</DropdownMenuItem>
           <DropdownMenuItem onClick={() => handleStatusUpdate('Cancelled')} disabled={booking.status === 'Cancelled' || isActionRunning}>Mark as Cancelled</DropdownMenuItem>
@@ -143,19 +155,33 @@ export default function AdminDashboardPage() {
   const [filteredBookings, setFilteredBookings] = React.useState<Booking[] | null>(null);
   const [statusFilter, setStatusFilter] = React.useState<string>('all');
   const [searchFilter, setSearchFilter] = React.useState<string>('');
+  const [isBillDialogOpen, setIsBillDialogOpen] = React.useState(false);
+  const [selectedBooking, setSelectedBooking] = React.useState<Booking | null>(null);
 
-  const popularServices = React.useMemo(() => {
-    if (!allBookings) return [];
-    const serviceCounts = allBookings.reduce((acc, booking) => {
-        acc[booking.serviceType] = (acc[booking.serviceType] || 0) + 1;
-        return acc;
-    }, {} as { [key: string]: number });
+  const { toast } = useToast();
 
-    return Object.entries(serviceCounts)
-        .sort(([, a], [, b]) => b - a)
-        .slice(0, 5);
+  const handleGenerateBill = (booking: Booking) => {
+    setSelectedBooking(booking);
+    setIsBillDialogOpen(true);
+  };
+
+  const handleBillSuccess = () => {
+    toast({ title: 'Success', description: 'Bill has been generated.' });
+    setIsBillDialogOpen(false);
+    setSelectedBooking(null);
+  };
+
+  const stats = React.useMemo(() => {
+    if (!allBookings) return { totalRevenue: 0, totalBookings: 0 };
+    const totalRevenue = allBookings
+      .filter(b => b.status === 'Completed' && b.paymentStatus === 'Paid' && b.amount)
+      .reduce((acc, b) => acc + (b.amount || 0), 0);
+    
+    return {
+      totalRevenue,
+      totalBookings: allBookings.length,
+    };
   }, [allBookings]);
-
 
   React.useEffect(() => {
     if (!userLoading && !user) {
@@ -241,7 +267,7 @@ export default function AdminDashboardPage() {
                     <CardTitle className="text-lg">{booking.serviceType}</CardTitle>
                     <CardDescription>{format(booking.bookingDate, 'PPp')}</CardDescription>
                   </div>
-                  <BookingActions booking={booking} db={db} />
+                  <BookingActions booking={booking} db={db} onGenerateBill={handleGenerateBill} />
                 </div>
               </CardHeader>
               <CardContent className="space-y-3 text-sm">
@@ -257,6 +283,12 @@ export default function AdminDashboardPage() {
                    <Car className="w-4 h-4 mr-2" />
                    <span className="text-muted-foreground">{booking.vehicleType}</span>
                 </div>
+                 {booking.amount && (
+                    <div className="flex items-center text-primary font-semibold">
+                      <DollarSign className="w-4 h-4 mr-2" />
+                      <span>{new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(booking.amount)}</span>
+                    </div>
+                  )}
                 <div className="flex items-center pt-2 gap-2 flex-wrap">
                   <Badge variant={getStatusVariant(booking.status)} className="flex items-center">
                     {statusIcons[booking.status]}
@@ -276,6 +308,7 @@ export default function AdminDashboardPage() {
               <TableRow>
                 <TableHead>Customer</TableHead>
                 <TableHead>Service</TableHead>
+                <TableHead>Amount</TableHead>
                 <TableHead>Date</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Payment</TableHead>
@@ -290,6 +323,9 @@ export default function AdminDashboardPage() {
                     <div className="text-sm text-muted-foreground">{booking.phone}</div>
                   </TableCell>
                   <TableCell>{booking.serviceType}</TableCell>
+                  <TableCell>
+                    {booking.amount ? new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(booking.amount) : '-'}
+                  </TableCell>
                   <TableCell>{format(booking.bookingDate, 'PPp')}</TableCell>
                   <TableCell>
                       <Badge variant={getStatusVariant(booking.status)} className="flex items-center w-fit">
@@ -301,7 +337,7 @@ export default function AdminDashboardPage() {
                     {getPaymentBadge(booking.paymentStatus, booking.paymentMethod)}
                   </TableCell>
                   <TableCell className="text-right">
-                    <BookingActions booking={booking} db={db} />
+                    <BookingActions booking={booking} db={db} onGenerateBill={handleGenerateBill} />
                   </TableCell>
                 </TableRow>
               ))}
@@ -318,30 +354,35 @@ export default function AdminDashboardPage() {
       <SiteHeader />
       <main className="flex-1 py-8 md:py-12">
         <div className="container">
-          <Card className="mb-6 bg-card/30 backdrop-blur-lg border border-border/10">
-            <CardHeader>
-              <CardTitle>Popular Services</CardTitle>
-              <CardDescription>Top 5 most frequently booked services.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {bookingsLoading ? (
-                 <div className="flex justify-center items-center h-24">
-                    <Loader2 className="h-6 w-6 animate-spin" />
-                 </div>
-              ) : popularServices.length > 0 ? (
-                <ul className="space-y-3">
-                  {popularServices.map(([service, count]) => (
-                    <li key={service} className="flex justify-between items-center text-sm">
-                      <span className="text-muted-foreground">{service}</span>
-                      <span className="font-semibold">{count} {count === 1 ? 'booking' : 'bookings'}</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-sm text-muted-foreground text-center py-8">Not enough data to show popular services yet.</p>
-              )}
-            </CardContent>
-          </Card>
+          <div className="grid gap-4 md:grid-cols-2 mb-6">
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+                    <DollarSign className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    {bookingsLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : (
+                      <>
+                        <div className="text-2xl font-bold">
+                          {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(stats.totalRevenue)}
+                        </div>
+                        <p className="text-xs text-muted-foreground">From completed and paid bookings</p>
+                      </>
+                    )}
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total Bookings</CardTitle>
+                    <Book className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    {bookingsLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : (
+                        <div className="text-2xl font-bold">{stats.totalBookings}</div>
+                    )}
+                </CardContent>
+            </Card>
+          </div>
           
           <Card className="bg-card/30 backdrop-blur-lg border border-border/10">
             <CardHeader>
@@ -355,6 +396,15 @@ export default function AdminDashboardPage() {
         </div>
       </main>
       <SiteFooter />
+       {selectedBooking && (
+        <GenerateBillDialog
+          isOpen={isBillDialogOpen}
+          onOpenChange={setIsBillDialogOpen}
+          bookingId={selectedBooking.id}
+          db={db}
+          onSuccess={handleBillSuccess}
+        />
+      )}
     </div>
   );
 }
