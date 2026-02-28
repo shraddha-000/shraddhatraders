@@ -9,6 +9,8 @@ import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { addBillToBooking } from '@/lib/actions';
 import type { Firestore } from 'firebase/firestore';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import type { PaymentStatus, PaymentMethod } from '@/lib/types';
 
 interface GenerateBillDialogProps {
   isOpen: boolean;
@@ -20,6 +22,7 @@ interface GenerateBillDialogProps {
 
 export function GenerateBillDialog({ isOpen, onOpenChange, bookingId, db, onSuccess }: GenerateBillDialogProps) {
   const [amount, setAmount] = React.useState('');
+  const [paymentOption, setPaymentOption] = React.useState('Pay Later'); // Values: 'Cash', 'Online', 'Pay Later'
   const [isLoading, setIsLoading] = React.useState(false);
   const { toast } = useToast();
 
@@ -35,7 +38,20 @@ export function GenerateBillDialog({ isOpen, onOpenChange, bookingId, db, onSucc
     }
 
     setIsLoading(true);
-    const result = await addBillToBooking(db, bookingId, numericAmount);
+
+    let paymentStatus: PaymentStatus = 'Pending';
+    let paymentMethod: PaymentMethod = 'N/A';
+
+    if (paymentOption === 'Cash') {
+        paymentStatus = 'Paid';
+        paymentMethod = 'Cash';
+    } else if (paymentOption === 'Online') {
+        paymentStatus = 'Paid';
+        paymentMethod = 'Online';
+    }
+    
+    const result = await addBillToBooking(db, bookingId, numericAmount, paymentStatus, paymentMethod);
+
     if (result.success) {
       onSuccess();
     } else {
@@ -51,6 +67,7 @@ export function GenerateBillDialog({ isOpen, onOpenChange, bookingId, db, onSucc
   React.useEffect(() => {
     if(!isOpen) {
         setAmount('');
+        setPaymentOption('Pay Later');
     }
   }, [isOpen])
 
@@ -60,10 +77,10 @@ export function GenerateBillDialog({ isOpen, onOpenChange, bookingId, db, onSucc
         <DialogHeader>
           <DialogTitle>Generate Bill</DialogTitle>
           <DialogDescription>
-            Enter the total amount for this service. This cannot be changed later.
+            Enter the total amount and payment details for this service.
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
+        <div className="grid gap-6 py-4">
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="amount" className="text-right">
               Amount (INR)
@@ -76,6 +93,27 @@ export function GenerateBillDialog({ isOpen, onOpenChange, bookingId, db, onSucc
               className="col-span-3"
               placeholder="e.g., 500.00"
             />
+          </div>
+          <div className="grid grid-cols-4 items-start gap-4">
+            <Label className="text-right pt-2">Payment</Label>
+            <RadioGroup
+              value={paymentOption}
+              onValueChange={setPaymentOption}
+              className="col-span-3 space-y-2"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="Cash" id="cash" />
+                <Label htmlFor="cash" className="font-normal">Paid (Cash)</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="Online" id="online" />
+                <Label htmlFor="online" className="font-normal">Paid (Online)</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="Pay Later" id="later" />
+                <Label htmlFor="later" className="font-normal">Pay Later</Label>
+              </div>
+            </RadioGroup>
           </div>
         </div>
         <DialogFooter>

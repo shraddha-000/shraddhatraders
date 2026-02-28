@@ -54,10 +54,14 @@ export async function updateBookingPayment(db: Firestore, bookingId: string, pay
     }
 }
 
-export async function addBillToBooking(db: Firestore, bookingId: string, amount: number) {
+export async function addBillToBooking(db: Firestore, bookingId: string, amount: number, paymentStatus: PaymentStatus, paymentMethod: PaymentMethod) {
     try {
         const bookingRef = doc(db, 'bookings', bookingId);
-        await updateDoc(bookingRef, { amount });
+        await updateDoc(bookingRef, {
+            amount,
+            paymentStatus,
+            paymentMethod
+        });
         return { success: true, message: 'Bill generated successfully.' };
     } catch (error) {
         console.error("Error adding bill to booking: ", error);
