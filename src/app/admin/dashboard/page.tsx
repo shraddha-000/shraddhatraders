@@ -2,8 +2,8 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import { useUser, useFirestore, useCollection } from '@/firebase'; // import firebase hooks
-import { collection, query, orderBy, Firestore } from 'firebase/firestore'; // import firestore functions
+import { useUser, useFirestore } from '@/firebase'; // import firebase hooks
+import { collection, query, orderBy, getDocs, Timestamp, Firestore } from 'firebase/firestore'; // import firestore functions
 import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,7 +13,7 @@ import type { Booking, BookingStatus, PaymentMethod, PaymentStatus } from '@/lib
 import { format } from 'date-fns';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, Trash2, CheckCircle, Clock, XCircle, Wrench, Loader2, User, Phone, Car, DollarSign, CreditCard, Receipt, TrendingUp, Book, FileText } from 'lucide-react';
+import { MoreHorizontal, Trash2, CheckCircle, Clock, XCircle, Wrench, Loader2, User, Phone, Car, DollarSign, CreditCard, Receipt, Book, FileText, RefreshCw } from 'lucide-react';
 import { deleteBooking, updateBookingStatus, updateBookingPayment, addBillToBooking } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -61,7 +61,7 @@ const getPaymentBadge = (paymentStatus?: PaymentStatus, paymentMethod?: PaymentM
 }
 
 
-function BookingActions({ booking, db, onGenerateBill }: { booking: Booking; db: Firestore; onGenerateBill: (booking: Booking) => void; }) {
+function BookingActions({ booking, db, onGenerateBill, onActionSuccess }: { booking: Booking; db: Firestore; onGenerateBill: (booking: Booking) => void; onActionSuccess: () => void; }) {
   const { toast } = useToast();
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [isUpdating, setIsUpdating] = React.useState(false);
@@ -71,6 +71,7 @@ function BookingActions({ booking, db, onGenerateBill }: { booking: Booking; db:
     setIsDeleting(true);
     const result = await deleteBooking(db, booking.id);
     toast({ title: result.success ? 'Success' : 'Error', description: result.message, variant: result.success ? 'default' : 'destructive' });
+    if(result.success) onActionSuccess();
     setIsDeleting(false);
   };
   
@@ -78,6 +79,7 @@ function BookingActions({ booking, db, onGenerateBill }: { booking: Booking; db:
     setIsUpdating(true);
     const result = await updateBookingStatus(db, booking.id, status);
     toast({ title: result.success ? 'Success' : 'Error', description: result.message, variant: result.success ? 'default' : 'destructive' });
+    if(result.success) onActionSuccess();
     setIsUpdating(false);
   }
 
@@ -85,6 +87,7 @@ function BookingActions({ booking, db, onGenerateBill }: { booking: Booking; db:
     setIsUpdatingPayment(true);
     const result = await updateBookingPayment(db, booking.id, paymentStatus, paymentMethod);
     toast({ title: result.success ? 'Success' : 'Error', description: result.message, variant: result.success ? 'default' : 'destructive' });
+    if(result.success) onActionSuccess();
     setIsUpdatingPayment(false);
   }
 
@@ -144,21 +147,60 @@ export default function AdminDashboardPage() {
   const { user, loading: userLoading } = useUser();
   const router = useRouter();
   const db = useFirestore();
+  const { toast } = useToast();
 
-  const bookingsQuery = React.useMemo(() => {
-    if (!db) return null;
-    return query(collection(db, 'bookings'), orderBy('bookingDate', 'desc'));
-  }, [db]);
+  const [allBookings, setAllBookings] = React.useState<Booking[] | null>(null);
+  const [bookingsLoading, setBookingsLoading] = React.useState(true);
   
-  const { data: allBookings, loading: bookingsLoading } = useCollection<Booking>(bookingsQuery);
-
   const [filteredBookings, setFilteredBookings] = React.useState<Booking[] | null>(null);
   const [statusFilter, setStatusFilter] = React.useState<string>('all');
   const [searchFilter, setSearchFilter] = React.useState<string>('');
   const [isBillDialogOpen, setIsBillDialogOpen] = React.useState(false);
   const [selectedBooking, setSelectedBooking] = React.useState<Booking | null>(null);
 
-  const { toast } = useToast();
+
+  const fetchBookings = React.useCallback(async () => {
+    if (!db) return;
+    setBookingsLoading(true);
+    try {
+      const bookingsQuery = query(collection(db, 'bookings'), orderBy('bookingDate', 'desc'));
+      const querySnapshot = await getDocs(bookingsQuery);
+      const bookingsData: Booking[] = [];
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        const bookingDate = data.bookingDate instanceof Timestamp ? data.bookingDate.toDate() : new Date(data.bookingDate);
+        const createdAt = data.createdAt instanceof Timestamp ? data.createdAt.toDate() : (data.createdAt ? new Date(data.createdAt) : undefined);
+
+        bookingsData.push({
+          id: doc.id,
+          ...data,
+          bookingDate,
+          createdAt,
+        } as Booking);
+      });
+      setAllBookings(bookingsData);
+    } catch (error) {
+        console.error("Error fetching bookings: ", error);
+        toast({
+            title: 'Error',
+            description: 'Could not fetch bookings. Please try again.',
+            variant: 'destructive',
+        });
+    } finally {
+        setBookingsLoading(false);
+    }
+  }, [db, toast]);
+
+  React.useEffect(() => {
+    if(db) {
+        fetchBookings();
+    }
+  }, [db, fetchBookings]);
+
+
+  const handleActionSuccess = () => {
+    fetchBookings();
+  };
 
   const handleGenerateBill = (booking: Booking) => {
     setSelectedBooking(booking);
@@ -169,6 +211,7 @@ export default function AdminDashboardPage() {
     toast({ title: 'Success', description: 'Bill has been generated.' });
     setIsBillDialogOpen(false);
     setSelectedBooking(null);
+    fetchBookings();
   };
 
   const stats = React.useMemo(() => {
@@ -190,7 +233,10 @@ export default function AdminDashboardPage() {
   }, [user, userLoading, router]);
 
   React.useEffect(() => {
-    if (!allBookings) return;
+    if (!allBookings) {
+      setFilteredBookings(null);
+      return;
+    };
     let filtered = allBookings;
     if (statusFilter !== 'all') {
       filtered = filtered.filter(b => b.status === statusFilter);
@@ -255,6 +301,10 @@ export default function AdminDashboardPage() {
               <SelectItem value="Cancelled">Cancelled</SelectItem>
             </SelectContent>
           </Select>
+          <Button variant="outline" onClick={fetchBookings} disabled={bookingsLoading}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${bookingsLoading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
         </div>
         
         {/* Mobile View */}
@@ -267,7 +317,7 @@ export default function AdminDashboardPage() {
                     <CardTitle className="text-lg">{booking.serviceType}</CardTitle>
                     <CardDescription>{format(booking.bookingDate, 'PPp')}</CardDescription>
                   </div>
-                  <BookingActions booking={booking} db={db} onGenerateBill={handleGenerateBill} />
+                  <BookingActions booking={booking} db={db} onGenerateBill={handleGenerateBill} onActionSuccess={handleActionSuccess} />
                 </div>
               </CardHeader>
               <CardContent className="space-y-3 text-sm">
@@ -337,7 +387,7 @@ export default function AdminDashboardPage() {
                     {getPaymentBadge(booking.paymentStatus, booking.paymentMethod)}
                   </TableCell>
                   <TableCell className="text-right">
-                    <BookingActions booking={booking} db={db} onGenerateBill={handleGenerateBill} />
+                    <BookingActions booking={booking} db={db} onGenerateBill={handleGenerateBill} onActionSuccess={handleActionSuccess} />
                   </TableCell>
                 </TableRow>
               ))}
@@ -396,7 +446,7 @@ export default function AdminDashboardPage() {
         </div>
       </main>
       <SiteFooter />
-       {selectedBooking && (
+       {selectedBooking && db && (
         <GenerateBillDialog
           isOpen={isBillDialogOpen}
           onOpenChange={setIsBillDialogOpen}
