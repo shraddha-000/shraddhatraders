@@ -1,5 +1,7 @@
-// This page is deprecated and has been replaced by /receipt?id=...
-// The configuration below ensures this dynamic route does not require a server
+import * as React from 'react';
+import { ReceiptPageContent } from '@/components/receipt-page-content';
+
+// This configuration ensures this dynamic route does not require a server
 // function, which is incompatible with the Firebase Spark plan.
 
 // By returning an empty array, we tell Next.js not to pre-render any pages
@@ -13,7 +15,7 @@ export async function generateStaticParams() {
 // server-side rendering (the "fallback") and the need for a Cloud Function.
 export const dynamicParams = false;
 
-// The component itself returns null, as it should never be rendered.
-export default function DeprecatedReceiptPage() {
-  return null;
+// This is a Server Component that renders the client-side content.
+export default function ReceiptPage({ params }: { params: { id: string } }) {
+  return <ReceiptPageContent id={params.id} />;
 }
