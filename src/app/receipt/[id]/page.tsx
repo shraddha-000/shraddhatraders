@@ -9,11 +9,10 @@ export async function generateStaticParams() {
   return [];
 }
 
+// By returning null, Next.js will render a 404 page for any path that would match this dynamic segment.
+// This effectively disables the route at build time, satisfying static export requirements.
 export default function DeprecatedReceiptPage() {
-  if (typeof window !== 'undefined') {
-    const params = window.location.pathname.split('/');
-    const id = params[params.length - 1];
-    window.location.replace(`/receipt?id=${id}`);
-  }
+  // The redirect logic has been removed as it was part of a client component.
+  // This component now correctly works with generateStaticParams to produce no static pages.
   return null;
 }
